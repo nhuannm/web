@@ -1,2 +1,41 @@
 https://www.aspsnippets.com/Articles/22/How-to-get-IP-Address-of-Visitors-Machine-in-ASPNet/
 https://www.aspsnippets.com/Articles/2661/Detect-Browser-Name-Version-Platform-OS-Mobile-or-Desktop-in-JavaScript-using-jQuery/
+
+' Gọi rest-api mikrptik
+Private Sub CallApiWithBasicAuth()
+        Dim username As String = "admin"
+        Dim password As String = "admin177"
+        Dim apiUrl As String = "http://192.168.88.1:8088/rest/ip/dhcp-server/lease?.proplist=address,mac-address&address=192.168.88.250"
+
+        Dim request As HttpWebRequest = CType(WebRequest.Create(apiUrl), HttpWebRequest)
+        request.Method = "GET"
+
+        ' Tạo chuỗi base64 username:password
+        Dim credentials As String = Convert.ToBase64String(Encoding.ASCII.GetBytes(username & ":" & password))
+        request.Headers(HttpRequestHeader.Authorization) = "Basic " & credentials
+
+        Try
+            Using response As HttpWebResponse = CType(request.GetResponse(), HttpWebResponse)
+                Using reader As New StreamReader(response.GetResponseStream())
+                    Dim result As String = reader.ReadToEnd() '[{....}]
+                    ' Khởi tạo bộ phân tích JSON 
+                    Dim serializer As New JavaScriptSerializer()
+                    Dim dataList As List(Of Dictionary(Of String, Object)) = serializer.Deserialize(Of List(Of Dictionary(Of String, Object)))(result)
+
+                    ' Duyệt từng phần tử trong array
+                    For Each item As Dictionary(Of String, Object) In dataList
+                        Dim id As String = item(".id").ToString
+                        Dim MacAddress As String = item("mac-address").ToString()
+                        Dim address As String = item("address").ToString()
+                        'Dim age As Integer = Convert.ToInt32(item("age"))
+
+                        lblChuTB.Text = MacAddress
+
+                    Next
+
+                End Using
+            End Using
+        Catch ex As Exception
+            Response.Write("Lỗi gọi API: " & ex.Message)
+        End Try
+    End Sub
